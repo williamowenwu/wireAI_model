@@ -17,24 +17,31 @@ class Wire_Grid():
         self.grid = [["W" for _ in range(self.D)] for _ in range(self.D)]
         # Choose either a row or a column randomly
         row_col = random.randint(0, 1)
-
+        used_row = []
+        used_col = []
         # Iterate through all colors
-        for _ in range(len(self.colors)):  # Subtract 1 to exclude the 'W' color
+        for _ in range(len(self.colors)):
             if row_col == 1:
-                # row
-                row = random.randint(0, self.D - 1)
-                color = self.choose_unused_color()
-                self.used.append(color)
-                self.grid[row] = [color] * self.D
-                row_col = 0
+                while True:
+                    row = random.randint(0, self.D - 1)
+                    if row not in used_row:
+                        color = self.choose_unused_color()
+                        self.used.append(color)
+                        self.grid[row] = [color] * self.D
+                        row_col = 0
+                        used_row.append(row)
+                        break
             else:
-                # col
-                col = random.randint(0, self.D - 1)
-                color = self.choose_unused_color()
-                self.used.append(color)
-                for x in range(self.D):
-                    self.grid[x][col] = color
-                row_col = 1
+                while True:
+                    col = random.randint(0, self.D - 1)
+                    if col not in used_col:
+                        color = self.choose_unused_color()
+                        self.used.append(color)
+                        for x in range(self.D):
+                            self.grid[x][col] = color
+                        row_col = 1
+                        used_col.append(col)
+                        break
                     
     def choose_unused_color(self):
         while True:
