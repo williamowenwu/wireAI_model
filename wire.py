@@ -84,14 +84,14 @@ class WireGrid():
 
 class WireModel():
     def __init__(self) -> None:
-        self.weights1 = np.random.rand(4, 10)  # 4 inputs for wire order, 10 neurons in hidden layer
-        self.weights2 = np.random.rand(10, 1)
-        self.bias1 = np.random.rand(10)
-        self.bias2 = np.random.rand(1)
+        self.weights1 = np.random.randn(4, 10)  # 4 inputs for wire order, 10 neurons in hidden layer
+        self.weights2 = np.random.randn(10, 1)
+        self.bias1 = np.random.randn(10)
+        self.bias2 = np.random.randn(1)
     
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-
+    
     def sigmoid_derivative(self, x):
         return x * (1 - x)
 
@@ -106,11 +106,20 @@ class WireModel():
             hidden = self.sigmoid(np.dot(inputs, self.weights1) + self.bias1)
             output = self.sigmoid(np.dot(hidden, self.weights2) + self.bias2) # value between 1 and 0
 
-            print
+            print(f"hidden: {hidden}")
+            print(f"Output: {output}")
+
             # Backpropagation
             output_error = outputs - output # 0 ideal for no cost correlation error
             output_delta = output_error * self.sigmoid_derivative(output)
 
+            print(f"output error: {output_error}")
+            print(f"output_delta: {output_delta}")
+            print(f"outputs: {outputs}")
+            
+            # print(f"hidden error: {hidden_error}")
+            # print(f"hidden_delta: {hidden_delta}")
+            
             hidden_error = output_delta.dot(self.weights2.T)
             hidden_delta = hidden_error * self.sigmoid_derivative(hidden)
 
@@ -152,7 +161,7 @@ if __name__ == "__main__":
 
     # Train the neural network
     nn = WireModel()
-    nn.train(inputs, outputs, iterations=10)
+    nn.train(inputs, outputs, iterations=1)
 
     # Predict new grid
     new_grid = WireGrid()
@@ -161,6 +170,7 @@ if __name__ == "__main__":
 
     print(wire_order)
     print(f"Prediction: Dangerous" if prediction[0] == 1 else "Not Dangerous")
+    print(nn.calculate_accuracy(prediction, outputs))
     
 
     
