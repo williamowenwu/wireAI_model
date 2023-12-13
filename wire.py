@@ -106,16 +106,16 @@ class WireModel():
             hidden = self.sigmoid(np.dot(inputs, self.weights1) + self.bias1)
             output = self.sigmoid(np.dot(hidden, self.weights2) + self.bias2) # value between 1 and 0
 
-            print(f"hidden: {hidden}")
-            print(f"Output: {output}")
+            #print(f"hidden: {hidden}")
+            #print(f"Output: {output}")
 
             # Backpropagation
             output_error = outputs - output # 0 ideal for no cost correlation error
             output_delta = output_error * self.sigmoid_derivative(output)
 
-            print(f"output error: {output_error}")
-            print(f"output_delta: {output_delta}")
-            print(f"outputs: {outputs}")
+            #print(f"output error: {output_error}")
+            #print(f"output_delta: {output_delta}")
+            #print(f"outputs: {outputs}")
             
             # print(f"hidden error: {hidden_error}")
             # print(f"hidden_delta: {hidden_delta}")
@@ -140,37 +140,71 @@ class WireModel():
         return correct / len(labels) * 100
 
 if __name__ == "__main__":
-    dataset_size = 1  # Number of grids
-    inputs = []
-    outputs = []
+    dataset_size = 1  # Number of grids (adjust as needed)
+    
+    total_accuracy_first_model = 0
+    
+    total_accuracy_second_model = 0
 
     for _ in range(dataset_size):
+        # Generate new grid for training
         grid = WireGrid()
         grid.generate_Grid()
-        grid.print_grid()
-        print(f"True label: {grid.is_dangerous()}")
-        time.sleep(1)
+        #print(f"True label: {grid.is_dangerous()}")
         wire_order = grid.get_wire_order()
         danger = grid.is_dangerous()
 
-        inputs.append(wire_order)
-        outputs.append([danger])
+        # Train the neural network
+        inputs = np.array([wire_order])
+        outputs = np.array([[danger]])
 
-    inputs = np.array(inputs)
-    outputs = np.array(outputs)
+        nn = WireModel()
+        nn.train(inputs, outputs, iterations=5)
 
-    # Train the neural network
-    nn = WireModel()
-    nn.train(inputs, outputs, iterations=1)
+        # Predict new grid
+        new_grid = WireGrid()
+        new_grid.generate_Grid()
+        prediction = nn.predict([new_grid.get_wire_order()])
+        
+        # Print prediction
+        #if prediction[0] == 1:
+            #print("Prediction: Dangerous\n")
+        #else: 
+            #print("Prediction: Not Dangerous\n")
 
-    # Predict new grid
-    new_grid = WireGrid()
-    new_grid.generate_Grid()
-    prediction = nn.predict([new_grid.get_wire_order()])
+        # Check accuracy
+        if prediction[0] == danger:
+            total_accuracy_first_model += 1
+        
+    for _ in range(dataset_size):
+        # Generate new grid for training
+        grid = WireGrid()
+        grid.generate_Grid()
+        wire_order = grid.get_wire_order()
+        danger = grid.is_dangerous()
+        
+        if danger:
+        # Train the second neural network
+            inputs_second = np.array([wire_order])
+            outputs_second = np.array([[3]])  # The correct answer is the third wire (index 2)
+            nn_second = WireModel()
+            nn_second.train(inputs_second, outputs_second, iterations=5)
 
-    print(wire_order)
-    print(f"Prediction: Dangerous" if prediction[0] == 1 else "Not Dangerous")
-    print(nn.calculate_accuracy(prediction, outputs))
-    
+            # Predict new grid
+            predictionGrid = WireGrid()
+            predictionGrid.generate_Grid()
+            prediction_second_model = nn_second.predict([predictionGrid.get_wire_order()])
 
-    
+            # Check accuracy of the second model
+            if 1 in prediction_second_model:
+                # Get the third wire in the sequence (index 2)
+                actual_wire_to_cut = 3
+                predicted_wire_by_second_model = np.argmax(prediction_second_model)
+
+                # Print information about wires
+                print(f"True label: {danger}, Actual Wire to Cut: {grid.used_color[actual_wire_to_cut - 1]}, Model Predicted: {grid.used_color[predicted_wire_by_second_model - 1]}")
+
+                total_accuracy_second_model += 1 if predicted_wire_by_second_model == actual_wire_to_cut else 0
+
+    print(f"Total Accuracy First Model: {total_accuracy_first_model / dataset_size * 100}%")
+    print(f"Total Accuracy Second Model: {total_accuracy_second_model / dataset_size * 100}%")
