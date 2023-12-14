@@ -118,41 +118,51 @@ class WireModel():
     
     
 class WireModel2():
-    def __init__(self):
-        self.weights = np.random.randn(4, 4) 
+    def __init__(self, dropout_rate=0.01, regularization_strength=0.01):
+        self.weights = np.random.randn(4, 4)
         self.bias = np.random.randn(4)
+        self.regularization_strength = regularization_strength
+        self.dropout_rate = dropout_rate
+        self.dropout_mask = None  # Will be used to store the dropout mask during training
 
-    #used for multiclassification
-    
     def softmax(self, x):
         exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
         return exp_x / exp_x.sum(axis=1, keepdims=True)
 
-    def forward(self, inputs):
+    def apply_dropout(self, inputs):
+        # Generate a binary mask where elements are 0 with probability dropout_rate
+        self.dropout_mask = (np.random.rand(*inputs.shape) < 1 - self.dropout_rate) / (1 - self.dropout_rate)
+        return inputs * self.dropout_mask
+
+    def forward(self, inputs, training=True):
+        if training:
+            inputs = self.apply_dropout(inputs)
         return self.softmax(np.dot(inputs, self.weights) + self.bias)
 
-    def train(self, inputs, outputs, iterations, learning_rate=0.01):
+    def train(self, inputs, outputs, iterations, learning_rate=0.1):
         for _ in range(iterations):
             # Forward pass
-            predictions = self.forward(inputs)
+            predictions = self.forward(inputs, training=True)
 
-            # Gradient descent
+            # Gradient descent with L2 regularization
             errors = outputs - predictions
-            dW = np.dot(inputs.T, errors)  # Gradient w.r.t. weights
-            dB = errors.sum(axis=0)  # Gradient w.r.t. bias
+            dW = np.dot(inputs.T, errors) - self.regularization_strength * self.weights
+            dB = errors.sum(axis=0)
 
             # Update weights and biases
             self.weights += learning_rate * dW
             self.bias += learning_rate * dB
 
     def predict(self, inputs):
-        probabilities = self.forward(inputs)
-        return np.argmax(probabilities, axis=1) + 1  # Add 1 to convert from 0-indexed to 1-indexed
+        # Apply dropout during prediction to ensure consistent behavior
+        inputs = self.apply_dropout(inputs)
+        probabilities = self.forward(inputs, training=False)
+        return np.argmax(probabilities, axis=1) + 1
 
     def calculate_accuracy(self, predictions, labels):
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
-        
+
 
 if __name__ == "__main__":
     
@@ -165,8 +175,8 @@ if __name__ == "__main__":
 
     for exp_num in range(num_experiments):
                 
-        dataset_size = 120 # Number of grids for training
-        test_size = 1000  # Number of grids for testing
+        dataset_size = 2000 # Number of grids for training
+        test_size = 2000  # Number of grids for testing
         inputs_model1 = []
         outputs_model1 = []
 
@@ -200,7 +210,7 @@ if __name__ == "__main__":
         nn1.train(inputs_model1, outputs_model1, dataset_size, learning_rate=0.01)
 
         # Train Model 2
-        nn2 = WireModel2()
+        nn2 = WireModel2(regularization_strength=0.01)
         outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] #one hot encoding which represents output labels for each color
         nn2.train(inputs_model2, outputs_model2_one_hot, dataset_size, learning_rate=0.01)
 
