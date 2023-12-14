@@ -88,7 +88,8 @@ class WireModel():
         self.bias = np.random.randn()
     
     def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
+        clipped_x = np.clip(x, -500, 500)  # Clip x to avoid overflow and underflow issues
+        return 1 / (1 + np.exp(-clipped_x))
 
     def forward(self, inputs):
         return self.sigmoid(np.dot(inputs, self.weights) + self.bias)
@@ -155,12 +156,14 @@ class WireModel2():
         return correct / len(labels) * 100
 
 if __name__ == "__main__":
-    num_experiments = 100
+    num_experiments = 1
     total_accuracy_model1 = 0
     total_accuracy_model2 = 0
+    
 
     for _ in range(num_experiments):
-        dataset_size = 100  # Number of grids for training
+                
+        dataset_size = 1000  # Number of grids for training
         test_size = 500  # Number of grids for testing
         inputs_model1 = []
         outputs_model1 = []
