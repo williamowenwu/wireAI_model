@@ -163,8 +163,8 @@ if __name__ == "__main__":
 
     for _ in range(num_experiments):
                 
-        dataset_size = 1000  # Number of grids for training
-        test_size = 500  # Number of grids for testing
+        dataset_size = 50  # Number of grids for training
+        test_size = 50  # Number of grids for testing
         inputs_model1 = []
         outputs_model1 = []
 
@@ -213,6 +213,11 @@ if __name__ == "__main__":
 
         test_inputs_model1 = np.array(test_inputs_model1)
         test_predictions_model1 = nn1.predict(test_inputs_model1)
+        
+        for i in range(test_size):
+            actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
+            predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
+            print(f"Grid {i + 1} (Model 1): Prediction - {predicted_label}, Actual - {actual_label}")
 
         accuracy_model1 = nn1.calculate_accuracy(test_predictions_model1, test_outputs_model1)
         total_accuracy_model1 += accuracy_model1
@@ -230,9 +235,16 @@ if __name__ == "__main__":
             if test_danger:
                 test_inputs_model2.append(test_order)
                 test_outputs_model2.append(test_grid.used_color.index('Y') + 1)  # Index of 'Y' color + 1
+                
+
 
         test_inputs_model2 = np.array(test_inputs_model2)
         test_predictions_model2 = nn2.predict(test_inputs_model2)
+        
+        for i in range(len(test_outputs_model2)):
+            actual_label = f"Cut Wire {test_outputs_model2[i]}"
+            predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
+            print(f"Grid {i + 1} (Model 2): Prediction - {predicted_label}, Actual - {actual_label}")
 
         accuracy_model2 = nn2.calculate_accuracy(test_predictions_model2, test_outputs_model2)
         total_accuracy_model2 += accuracy_model2
