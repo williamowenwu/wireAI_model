@@ -83,94 +83,83 @@ class WireGrid():
             print(Back.RESET) 
 
 class WireModel():
-    def __init__(self) -> None:
-        self.weights1 = np.random.randn(4, 10)  # 4 inputs for wire order, 10 neurons in hidden layer
-        self.weights2 = np.random.randn(10, 1)
-        self.bias1 = np.random.randn(10)
-        self.bias2 = np.random.randn(1)
+    def __init__(self):
+        self.weights = np.random.randn(4)  # 4 inputs for wire order
+        self.bias = np.random.randn()
     
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-    
-    def sigmoid_derivative(self, x):
-        return x * (1 - x)
 
     def forward(self, inputs):
-        self.hidden = self.sigmoid(np.dot(inputs, self.weights1) + self.bias1)
-        output = self.sigmoid(np.dot(self.hidden, self.weights2) + self.bias2)
-        return output
+        return self.sigmoid(np.dot(inputs, self.weights) + self.bias)
 
-    def train(self, inputs, outputs, iterations):
+    def train(self, inputs, outputs, iterations, learning_rate=0.01):
         for _ in range(iterations):
             # Forward pass
-            hidden = self.sigmoid(np.dot(inputs, self.weights1) + self.bias1)
-            output = self.sigmoid(np.dot(hidden, self.weights2) + self.bias2) # value between 1 and 0
+            predictions = self.forward(inputs)
 
-            print(f"hidden: {hidden}")
-            print(f"Output: {output}")
-
-            # Backpropagation
-            output_error = outputs - output # 0 ideal for no cost correlation error
-            output_delta = output_error * self.sigmoid_derivative(output)
-
-            print(f"output error: {output_error}")
-            print(f"output_delta: {output_delta}")
-            print(f"outputs: {outputs}")
-            
-            # print(f"hidden error: {hidden_error}")
-            # print(f"hidden_delta: {hidden_delta}")
-            
-            hidden_error = output_delta.dot(self.weights2.T)
-            hidden_delta = hidden_error * self.sigmoid_derivative(hidden)
+            # Gradient descent
+            errors = outputs - predictions
+            dW = np.dot(inputs.T, errors).mean(axis=1)  # Calculate average gradient w.r.t. weights
+            dB = errors.mean()  # Calculate average gradient w.r.t. bias
 
             # Update weights and biases
-            self.weights2 += hidden.T.dot(output_delta)
-            self.bias2 += np.sum(output_delta, axis=0)
-
-            self.weights1 += inputs.T.dot(hidden_delta)
-            self.bias1 += np.sum(hidden_delta, axis=0)
+            self.weights += learning_rate * dW  # dW is already 1D
+            self.bias += learning_rate * dB
 
     def predict(self, inputs):
-        output = self.forward(inputs)
-        print(output)
-        return [1 if o > 0.5 else 0 for o in output]
+        probabilities = self.forward(inputs)
+        return [1 if p > 0.5 else 0 for p in probabilities]
 
     def calculate_accuracy(self, predictions, labels):
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
 
 if __name__ == "__main__":
-    dataset_size = 1  # Number of grids
+    dataset_size = 50  # Number of grids for training
+    test_size = 20  # Number of grids for testing
     inputs = []
     outputs = []
 
+    # Generate training data
     for _ in range(dataset_size):
         grid = WireGrid()
         grid.generate_Grid()
-        grid.print_grid()
-        print(f"True label: {grid.is_dangerous()}")
-        time.sleep(1)
         wire_order = grid.get_wire_order()
         danger = grid.is_dangerous()
 
         inputs.append(wire_order)
         outputs.append([danger])
 
-    inputs = np.array(inputs)
-    outputs = np.array(outputs)
+    inputs = np.array(inputs)  # Should be shape (dataset_size, 4)
+    outputs = np.array(outputs)  # Should be shape (dataset_size, 1)
 
     # Train the neural network
     nn = WireModel()
-    nn.train(inputs, outputs, iterations=1)
+    nn.train(inputs, outputs, dataset_size, learning_rate=0.01)
 
-    # Predict new grid
-    new_grid = WireGrid()
-    new_grid.generate_Grid()
-    prediction = nn.predict([new_grid.get_wire_order()])
+    # Generate test data
+    test_inputs = []
+    test_outputs = []
 
-    print(wire_order)
-    print(f"Prediction: Dangerous" if prediction[0] == 1 else "Not Dangerous")
-    print(nn.calculate_accuracy(prediction, outputs))
-    
+    for _ in range(test_size):
+        test_grid = WireGrid()
+        test_grid.generate_Grid()
+        test_order = test_grid.get_wire_order()
+        test_danger = test_grid.is_dangerous()
 
-    
+        test_inputs.append(test_order)
+        test_outputs.append(test_danger)
+
+    test_inputs = np.array(test_inputs)
+    test_predictions = nn.predict(test_inputs)
+
+    # Print predictions and correct labels for each test data
+    for i in range(test_size):
+        actual_label = 'Dangerous' if test_outputs[i] == 1 else 'Not Dangerous'
+        predicted_label = 'Dangerous' if test_predictions[i] == 1 else 'Not Dangerous'
+        print(f"Grid {i+1}: Prediction - {predicted_label}, Actual - {actual_label}")
+
+    # Calculate and print accuracy on the test set
+    accuracy = nn.calculate_accuracy(test_predictions, test_outputs)
+    print(f"Test Accuracy: {accuracy}%")
