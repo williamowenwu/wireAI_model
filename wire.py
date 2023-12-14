@@ -114,33 +114,84 @@ class WireModel():
     def calculate_accuracy(self, predictions, labels):
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
+    
+    
+class WireModel2():
+    def __init__(self):
+        self.weights = np.random.randn(4, 4)  # 4 inputs for wire order, 4 neurons in output layer to decide which one to cut
+        self.bias = np.random.randn(4)
+    
+    
+    #used for multiclassification
+    
+    def softmax(self, x):
+        exp_x = np.exp(x - np.max(x))
+        return exp_x / exp_x.sum(axis=0, keepdims=True)
+
+    def forward(self, inputs):
+        return self.softmax(np.dot(inputs, self.weights) + self.bias)
+
+    def train(self, inputs, outputs, iterations, learning_rate=0.01):
+        for _ in range(iterations):
+            # Forward pass
+            predictions = self.forward(inputs)
+
+            # Gradient descent
+            errors = outputs - predictions
+            dW = np.dot(inputs.T, errors)  # Gradient w.r.t. weights
+            dB = errors.sum(axis=0)  # Gradient w.r.t. bias
+
+            # Update weights and biases
+            self.weights += learning_rate * dW
+            self.bias += learning_rate * dB
+
+    def predict(self, inputs):
+        probabilities = self.forward(inputs)
+        return np.argmax(probabilities, axis=1) + 1  # Add 1 to convert from 0-indexed to 1-indexed
+
+    def calculate_accuracy(self, predictions, labels):
+        correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
+        return correct / len(labels) * 100
 
 if __name__ == "__main__":
     dataset_size = 50  # Number of grids for training
     test_size = 20  # Number of grids for testing
-    inputs = []
-    outputs = []
+    inputs_model1 = []
+    outputs_model1 = []
 
-    # Generate training data
+    inputs_model2 = []
+    outputs_model2 = []
+
     for _ in range(dataset_size):
         grid = WireGrid()
         grid.generate_Grid()
         wire_order = grid.get_wire_order()
         danger = grid.is_dangerous()
 
-        inputs.append(wire_order)
-        outputs.append([danger])
+        inputs_model1.append(wire_order)
+        outputs_model1.append([danger])
 
-    inputs = np.array(inputs)  # Should be shape (dataset_size, 4)
-    outputs = np.array(outputs)  # Should be shape (dataset_size, 1)
+        if danger:
+            inputs_model2.append(wire_order)
+            outputs_model2.append(grid.used_color.index('Y') + 1)  
 
-    # Train the neural network
-    nn = WireModel()
-    nn.train(inputs, outputs, dataset_size, learning_rate=0.01)
+    inputs_model1 = np.array(inputs_model1)  
+    outputs_model1 = np.array(outputs_model1) 
 
-    # Generate test data
-    test_inputs = []
-    test_outputs = []
+    inputs_model2 = np.array(inputs_model2)  
+    outputs_model2 = np.array(outputs_model2) 
+
+    # Train Model 1
+    nn1 = WireModel()
+    nn1.train(inputs_model1, outputs_model1, dataset_size, learning_rate=0.01)
+
+    # Train Model 2
+    nn2 = WireModel2()
+    outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] #one hot encoding which represents output labels for each color
+    nn2.train(inputs_model2, outputs_model2_one_hot, len(outputs_model2), learning_rate=0.01)
+
+    test_inputs_model1 = []
+    test_outputs_model1 = []
 
     for _ in range(test_size):
         test_grid = WireGrid()
@@ -148,18 +199,41 @@ if __name__ == "__main__":
         test_order = test_grid.get_wire_order()
         test_danger = test_grid.is_dangerous()
 
-        test_inputs.append(test_order)
-        test_outputs.append(test_danger)
+        test_inputs_model1.append(test_order)
+        test_outputs_model1.append(test_danger)
 
-    test_inputs = np.array(test_inputs)
-    test_predictions = nn.predict(test_inputs)
+    test_inputs_model1 = np.array(test_inputs_model1)
+    test_predictions_model1 = nn1.predict(test_inputs_model1)
 
-    # Print predictions and correct labels for each test data
     for i in range(test_size):
-        actual_label = 'Dangerous' if test_outputs[i] == 1 else 'Not Dangerous'
-        predicted_label = 'Dangerous' if test_predictions[i] == 1 else 'Not Dangerous'
-        print(f"Grid {i+1}: Prediction - {predicted_label}, Actual - {actual_label}")
+        actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
+        predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
+        print(f"Grid {i + 1} (Model 1): Prediction - {predicted_label}, Actual - {actual_label}")
 
-    # Calculate and print accuracy on the test set
-    accuracy = nn.calculate_accuracy(test_predictions, test_outputs)
-    print(f"Test Accuracy: {accuracy}%")
+    accuracy_model1 = nn1.calculate_accuracy(test_predictions_model1, test_outputs_model1)
+    print(f"Test Accuracy (Model 1): {accuracy_model1}%")
+
+    # Generate test data for Model 2
+    test_inputs_model2 = []
+    test_outputs_model2 = []
+
+    for _ in range(test_size):
+        test_grid = WireGrid()
+        test_grid.generate_Grid()
+        test_order = test_grid.get_wire_order()
+        test_danger = test_grid.is_dangerous()
+
+        if test_danger:
+            test_inputs_model2.append(test_order)
+            test_outputs_model2.append(test_grid.used_color.index('Y') + 1)  # Index of 'Y' color + 1
+
+    test_inputs_model2 = np.array(test_inputs_model2)
+    test_predictions_model2 = nn2.predict(test_inputs_model2)
+
+    for i in range(len(test_outputs_model2)):
+        actual_label = f"Cut Wire {test_outputs_model2[i]}"
+        predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
+        print(f"Grid {i + 1} (Model 2): Prediction - {predicted_label}, Actual - {actual_label}")
+
+    accuracy_model2 = nn2.calculate_accuracy(test_predictions_model2, test_outputs_model2)
+    print(f"Test Accuracy (Model 2): {accuracy_model2}%")
