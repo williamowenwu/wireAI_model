@@ -119,16 +119,14 @@ class WireModel():
     
 class WireModel2():
     def __init__(self):
-        self.weights = np.random.randn(4, 4)  # 4 inputs for wire order, 4 neurons in output layer to decide which one to cut
+        self.weights = np.random.randn(4, 4) 
         self.bias = np.random.randn(4)
-    
-    
+
     #used for multiclassification
     
     def softmax(self, x):
         exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
         return exp_x / exp_x.sum(axis=1, keepdims=True)
-
 
     def forward(self, inputs):
         return self.softmax(np.dot(inputs, self.weights) + self.bias)
@@ -154,17 +152,21 @@ class WireModel2():
     def calculate_accuracy(self, predictions, labels):
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
+        
 
 if __name__ == "__main__":
-    num_experiments = 1
+    
+    num_experiments = int(input("Enter the number of experiments: "))
+    print_statements = input("Do you want to print statements? (yes/no): ").lower() == "yes"
+    
     total_accuracy_model1 = 0
     total_accuracy_model2 = 0
     
 
-    for _ in range(num_experiments):
+    for exp_num in range(num_experiments):
                 
-        dataset_size = 50  # Number of grids for training
-        test_size = 50  # Number of grids for testing
+        dataset_size = 120 # Number of grids for training
+        test_size = 1000  # Number of grids for testing
         inputs_model1 = []
         outputs_model1 = []
 
@@ -182,13 +184,16 @@ if __name__ == "__main__":
 
             if danger:
                 inputs_model2.append(wire_order)
-                outputs_model2.append(grid.used_color.index('Y') + 1)  
+                outputs_model2.append(wire_order[2])
+                 
 
         inputs_model1 = np.array(inputs_model1)  
         outputs_model1 = np.array(outputs_model1) 
 
         inputs_model2 = np.array(inputs_model2)  
         outputs_model2 = np.array(outputs_model2) 
+        # print(inputs_model2)
+        # print(outputs_model2)
 
         # Train Model 1
         nn1 = WireModel()
@@ -214,10 +219,10 @@ if __name__ == "__main__":
         test_inputs_model1 = np.array(test_inputs_model1)
         test_predictions_model1 = nn1.predict(test_inputs_model1)
         
-        for i in range(test_size):
-            actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
-            predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
-            print(f"Grid {i + 1} (Model 1): Prediction - {predicted_label}, Actual - {actual_label}")
+        # for i in range(test_size):
+        #     actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
+        #     predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
+        #     print(f"Grid {i + 1} (Model 1): Prediction - {predicted_label}, Actual - {actual_label}")
 
         accuracy_model1 = nn1.calculate_accuracy(test_predictions_model1, test_outputs_model1)
         total_accuracy_model1 += accuracy_model1
@@ -234,20 +239,42 @@ if __name__ == "__main__":
 
             if test_danger:
                 test_inputs_model2.append(test_order)
-                test_outputs_model2.append(3)  # Index of 'Y' color + 1
+                test_outputs_model2.append(test_order[2])
                 
-
-
+        testinputsarray = np.array(test_inputs_model2)
+            
+        # print(f'THESE ARE TEST INPUTS: {testinputsarray}')
+        # print(f'THESE ARE TEST OUTPUTS: {test_outputs_model2}')
+            
         test_inputs_model2 = np.array(test_inputs_model2)
-        test_predictions_model2 = nn2.predict(test_inputs_model2)
         
-        for i in range(len(test_outputs_model2)):
-            actual_label = f"Cut Wire {test_outputs_model2[i]}"
-            predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
-            print(f"Grid {i + 1} (Model 2): Prediction - {predicted_label}, Actual - {actual_label}")
+        test_predictions_model2 = nn2.predict(test_inputs_model2)
 
         accuracy_model2 = nn2.calculate_accuracy(test_predictions_model2, test_outputs_model2)
         total_accuracy_model2 += accuracy_model2
+        
+        if print_statements:
+            print(f"Experiment {exp_num + 1}:")
+
+            # Print statements for Model 1
+            print("Model 1:")
+            for i in range(test_size):
+                actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
+                predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
+                print(f"  Grid {i + 1}: Prediction - {predicted_label}, Actual - {actual_label}")
+
+            # Print statements for Model 2
+            print("Model 2:")
+            for i in range(len(test_outputs_model2)):
+                actual_label = f"Cut Wire {test_outputs_model2[i]}"
+                predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
+                print(f"  Grid {i + 1}: Prediction - {predicted_label}, Actual - {actual_label}")
+
+        
+        # for i in range(len(test_outputs_model2)):
+        #     actual_label = f"Cut Wire {test_outputs_model2[i]}"
+        #     predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
+        #     print(f"Grid {i + 1} (Model 2): Prediction - {predicted_label}, Actual - {actual_label}")
 
     average_accuracy_model1 = total_accuracy_model1 / num_experiments
     average_accuracy_model2 = total_accuracy_model2 / num_experiments
