@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
             if test_danger:
                 test_inputs_model2.append(test_order)
-                test_outputs_model2.append(test_grid.used_color.index('Y') + 1)  # Index of 'Y' color + 1
+                test_outputs_model2.append(3)  # Index of 'Y' color + 1
                 
 
 
