@@ -3,7 +3,6 @@ import math
 import numpy as np
 from colorama import Back
 import random
-import matplotlib.pyplot as plt
 
 class WireGrid():
     def __init__(self) -> None:
@@ -115,26 +114,6 @@ class WireModel():
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
     
-    def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.01):
-        losses = []  
-        for _ in range(iterations):
-            predictions = self.sigmoid(np.dot(inputs, self.weights) + self.bias)
-
-            loss = -np.mean(outputs * np.log(predictions + 1e-15) + (1 - outputs) * np.log(1 - predictions + 1e-15))
-
-            errors = outputs - predictions
-            dW = np.dot(inputs.T, errors).mean(axis=1)  
-            dB = errors.mean()  
-
-     
-            self.weights += learning_rate * dW 
-            self.bias += learning_rate * dB
-
-            losses.append(loss)  
-
-        return losses  
-
-    
     
 class WireModel2():
     def __init__(self, dropout_rate=0.05, regularization_strength=0.01):
@@ -172,26 +151,6 @@ class WireModel2():
             self.weights += learning_rate * dW
             self.bias += learning_rate * dB
             
-    def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.1):
-        losses = [] 
-        for _ in range(iterations):
-            predictions = self.forward(inputs, training=True)
-
-            
-            loss = -np.sum(outputs * np.log(predictions + 1e-15)) / len(outputs) 
-
-            errors = outputs - predictions
-            dW = np.dot(inputs.T, errors) - self.regularization_strength * self.weights
-            dB = errors.sum(axis=0)
-
-     
-            self.weights += learning_rate * dW
-            self.bias += learning_rate * dB
-
-            losses.append(loss)  
-
-        return losses  
-
     def predict(self, inputs):
     
         inputs = self.apply_dropout(inputs)
@@ -210,9 +169,7 @@ if __name__ == "__main__":
     
     total_accuracy_model1 = 0
     total_accuracy_model2 = 0
-    
-    losses_model1 = []
-    losses_model2 = []
+
     
 
     for exp_num in range(num_experiments):
@@ -317,33 +274,6 @@ if __name__ == "__main__":
     print(f"Average Test Accuracy (Model 1) over {num_experiments} experiments: {average_accuracy_model1}%")
     print(f"Average Test Accuracy (Model 2) over {num_experiments} experiments: {average_accuracy_model2}%")
     
-    nn1 = WireModel()
-    loss_model1 = nn1.train_with_loss(inputs_model1, outputs_model1, dataset_size, learning_rate=0.01)
-    losses_model1.append(loss_model1)
-
-    # Train Model 2
-    nn2 = WireModel2(regularization_strength=0.01)
-    outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] 
-    loss_model2 = nn2.train_with_loss(inputs_model2, outputs_model2_one_hot, dataset_size, learning_rate=0.01)
-    losses_model2.append(loss_model2)
-    
-    for i, loss_values in enumerate(losses_model1):
-        plt.plot(loss_values, label=f'Model 1 - Experiment {i + 1}')
-
-    plt.xlabel('Iteration')
-    plt.ylabel('Loss')
-    plt.title('Loss over time for Model 1')
-    plt.legend()
-    plt.show()
-
-    for i, loss_values in enumerate(losses_model2):
-        plt.plot(loss_values, label=f'Model 2 - Experiment {i + 1}')
-
-    plt.xlabel('Iteration')
-    plt.ylabel('Loss')
-    plt.title('Loss over time for Model 2')
-    plt.legend()
-    plt.show()
     
     
     
