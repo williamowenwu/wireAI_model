@@ -3,6 +3,7 @@ import math
 import numpy as np
 from colorama import Back
 import random
+import matplotlib.pyplot as plt
 
 class WireGrid():
     def __init__(self) -> None:
@@ -116,9 +117,32 @@ class WireModel():
         correct = sum([1 if p == l else 0 for p, l in zip(predictions, labels)])
         return correct / len(labels) * 100
     
+    def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.01):
+        losses = []  # List to store losses over time
+        for _ in range(iterations):
+            # Forward pass
+            predictions = self.sigmoid(np.dot(inputs, self.weights) + self.bias)
+
+            # Loss calculation
+            loss = -np.mean(outputs * np.log(predictions + 1e-15) + (1 - outputs) * np.log(1 - predictions + 1e-15))
+
+            # Gradient descent
+            errors = outputs - predictions
+            dW = np.dot(inputs.T, errors).mean(axis=1)  # Calculate average gradient w.r.t. weights
+            dB = errors.mean()  # Calculate average gradient w.r.t. bias
+
+            # Update weights and biases
+            self.weights += learning_rate * dW  # dW is already 1D
+            self.bias += learning_rate * dB
+
+            losses.append(loss)  # Store the loss
+
+        return losses  # Return losses over time
+
+    
     
 class WireModel2():
-    def __init__(self, dropout_rate=0.01, regularization_strength=0.01):
+    def __init__(self, dropout_rate=0.05, regularization_strength=0.01):
         self.weights = np.random.randn(4, 4)
         self.bias = np.random.randn(4)
         self.regularization_strength = regularization_strength
@@ -152,6 +176,28 @@ class WireModel2():
             # Update weights and biases
             self.weights += learning_rate * dW
             self.bias += learning_rate * dB
+            
+    def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.1):
+        losses = []  # List to store losses over time
+        for _ in range(iterations):
+            # Forward pass
+            predictions = self.forward(inputs, training=True)
+
+            # Loss calculation
+            loss = -np.sum(outputs * np.log(predictions + 1e-15)) / len(outputs)  # Add a small value to avoid log(0)
+
+            # Gradient descent with L2 regularization
+            errors = outputs - predictions
+            dW = np.dot(inputs.T, errors) - self.regularization_strength * self.weights
+            dB = errors.sum(axis=0)
+
+            # Update weights and biases
+            self.weights += learning_rate * dW
+            self.bias += learning_rate * dB
+
+            losses.append(loss)  # Store the loss
+
+        return losses  # Return losses over time
 
     def predict(self, inputs):
         # Apply dropout during prediction to ensure consistent behavior
@@ -172,11 +218,14 @@ if __name__ == "__main__":
     total_accuracy_model1 = 0
     total_accuracy_model2 = 0
     
+    losses_model1 = []
+    losses_model2 = []
+    
 
     for exp_num in range(num_experiments):
                 
-        dataset_size = 2000 # Number of grids for training
-        test_size = 2000  # Number of grids for testing
+        dataset_size = 50 # Number of grids for training
+        test_size = 50  # Number of grids for testing
         inputs_model1 = []
         outputs_model1 = []
 
@@ -291,3 +340,36 @@ if __name__ == "__main__":
 
     print(f"Average Test Accuracy (Model 1) over {num_experiments} experiments: {average_accuracy_model1}%")
     print(f"Average Test Accuracy (Model 2) over {num_experiments} experiments: {average_accuracy_model2}%")
+    
+    nn1 = WireModel()
+    loss_model1 = nn1.train_with_loss(inputs_model1, outputs_model1, dataset_size, learning_rate=0.01)
+    losses_model1.append(loss_model1)
+
+    # Train Model 2
+    nn2 = WireModel2(regularization_strength=0.01)
+    outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1]  # one hot encoding
+    loss_model2 = nn2.train_with_loss(inputs_model2, outputs_model2_one_hot, dataset_size, learning_rate=0.01)
+    losses_model2.append(loss_model2)
+    
+    for i, loss_values in enumerate(losses_model1):
+        plt.plot(loss_values, label=f'Model 1 - Experiment {i + 1}')
+
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+    plt.title('Loss over time for Model 1')
+    plt.legend()
+    plt.show()
+
+    # Plot the loss over time for Model 2
+    for i, loss_values in enumerate(losses_model2):
+        plt.plot(loss_values, label=f'Model 2 - Experiment {i + 1}')
+
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+    plt.title('Loss over time for Model 2')
+    plt.legend()
+    plt.show()
+    
+    
+    
+    
