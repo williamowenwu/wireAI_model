@@ -7,16 +7,15 @@ import matplotlib.pyplot as plt
 
 class WireGrid():
     def __init__(self) -> None:
-        self.D = 20 # 20 x 20  Dimension of ship
+        self.D = 20 
         self.grid = []
 
-        # colors possible in the grid the colors being used will be indices 0 - 3
         self.colors = ["R", "B", "Y", "G"]
-        self.used_color = [] # also functions as wire color order
+        self.used_color = [] 
 
     def generate_Grid(self) -> None:
         self.grid = [["W" for _ in range(self.D)] for _ in range(self.D)]
-        row_col = random.randint(0, 1) # randomly row or col
+        row_col = random.randint(0, 1)
         used_row = []
         used_col = []
 
@@ -53,9 +52,8 @@ class WireGrid():
             color_map = {'R': 1, 'B': 2, 'Y': 3, 'G': 4} # R Y G B 
             wire_order = [color_map[color] for color in self.used_color]
             return wire_order
+
     
-    # returns if label is dangerous or not --> 1 = dangerous, 0 = not
-    # returns if label is dangerous or not --> 1 = dangerous, 0 = not
     def is_dangerous(self):
         found_yellow = False
         for i in self.used_color:
@@ -85,11 +83,11 @@ class WireGrid():
 
 class WireModel():
     def __init__(self):
-        self.weights = np.random.randn(4)  # 4 inputs for wire order
+        self.weights = np.random.randn(4) 
         self.bias = np.random.randn()
     
     def sigmoid(self, x):
-        clipped_x = np.clip(x, -500, 500)  # Clip x to avoid overflow and underflow issues
+        clipped_x = np.clip(x, -500, 500)  
         return 1 / (1 + np.exp(-clipped_x))
 
     def forward(self, inputs):
@@ -97,16 +95,16 @@ class WireModel():
 
     def train(self, inputs, outputs, iterations, learning_rate=0.01):
         for _ in range(iterations):
-            # Forward pass
+       
             predictions = self.forward(inputs)
 
-            # Gradient descent
+      
             errors = outputs - predictions
-            dW = np.dot(inputs.T, errors).mean(axis=1)  # Calculate average gradient w.r.t. weights
-            dB = errors.mean()  # Calculate average gradient w.r.t. bias
+            dW = np.dot(inputs.T, errors).mean(axis=1) 
+            dB = errors.mean() 
 
-            # Update weights and biases
-            self.weights += learning_rate * dW  # dW is already 1D
+            
+            self.weights += learning_rate * dW  
             self.bias += learning_rate * dB
 
     def predict(self, inputs):
@@ -118,26 +116,23 @@ class WireModel():
         return correct / len(labels) * 100
     
     def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.01):
-        losses = []  # List to store losses over time
+        losses = []  
         for _ in range(iterations):
-            # Forward pass
             predictions = self.sigmoid(np.dot(inputs, self.weights) + self.bias)
 
-            # Loss calculation
             loss = -np.mean(outputs * np.log(predictions + 1e-15) + (1 - outputs) * np.log(1 - predictions + 1e-15))
 
-            # Gradient descent
             errors = outputs - predictions
-            dW = np.dot(inputs.T, errors).mean(axis=1)  # Calculate average gradient w.r.t. weights
-            dB = errors.mean()  # Calculate average gradient w.r.t. bias
+            dW = np.dot(inputs.T, errors).mean(axis=1)  
+            dB = errors.mean()  
 
-            # Update weights and biases
-            self.weights += learning_rate * dW  # dW is already 1D
+     
+            self.weights += learning_rate * dW 
             self.bias += learning_rate * dB
 
-            losses.append(loss)  # Store the loss
+            losses.append(loss)  
 
-        return losses  # Return losses over time
+        return losses  
 
     
     
@@ -147,14 +142,14 @@ class WireModel2():
         self.bias = np.random.randn(4)
         self.regularization_strength = regularization_strength
         self.dropout_rate = dropout_rate
-        self.dropout_mask = None  # Will be used to store the dropout mask during training
+        self.dropout_mask = None  
 
     def softmax(self, x):
         exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
         return exp_x / exp_x.sum(axis=1, keepdims=True)
 
     def apply_dropout(self, inputs):
-        # Generate a binary mask where elements are 0 with probability dropout_rate
+        
         self.dropout_mask = (np.random.rand(*inputs.shape) < 1 - self.dropout_rate) / (1 - self.dropout_rate)
         return inputs * self.dropout_mask
 
@@ -165,42 +160,40 @@ class WireModel2():
 
     def train(self, inputs, outputs, iterations, learning_rate=0.1):
         for _ in range(iterations):
-            # Forward pass
+           
             predictions = self.forward(inputs, training=True)
 
-            # Gradient descent with L2 regularization
+            
             errors = outputs - predictions
             dW = np.dot(inputs.T, errors) - self.regularization_strength * self.weights
             dB = errors.sum(axis=0)
 
-            # Update weights and biases
+          
             self.weights += learning_rate * dW
             self.bias += learning_rate * dB
             
     def train_with_loss(self, inputs, outputs, iterations, learning_rate=0.1):
-        losses = []  # List to store losses over time
+        losses = [] 
         for _ in range(iterations):
-            # Forward pass
             predictions = self.forward(inputs, training=True)
 
-            # Loss calculation
-            loss = -np.sum(outputs * np.log(predictions + 1e-15)) / len(outputs)  # Add a small value to avoid log(0)
+            
+            loss = -np.sum(outputs * np.log(predictions + 1e-15)) / len(outputs) 
 
-            # Gradient descent with L2 regularization
             errors = outputs - predictions
             dW = np.dot(inputs.T, errors) - self.regularization_strength * self.weights
             dB = errors.sum(axis=0)
 
-            # Update weights and biases
+     
             self.weights += learning_rate * dW
             self.bias += learning_rate * dB
 
-            losses.append(loss)  # Store the loss
+            losses.append(loss)  
 
-        return losses  # Return losses over time
+        return losses  
 
     def predict(self, inputs):
-        # Apply dropout during prediction to ensure consistent behavior
+    
         inputs = self.apply_dropout(inputs)
         probabilities = self.forward(inputs, training=False)
         return np.argmax(probabilities, axis=1) + 1
@@ -224,8 +217,8 @@ if __name__ == "__main__":
 
     for exp_num in range(num_experiments):
                 
-        dataset_size = 50 # Number of grids for training
-        test_size = 50  # Number of grids for testing
+        dataset_size = 200 
+        test_size = 2000  
         inputs_model1 = []
         outputs_model1 = []
 
@@ -251,16 +244,13 @@ if __name__ == "__main__":
 
         inputs_model2 = np.array(inputs_model2)  
         outputs_model2 = np.array(outputs_model2) 
-        # print(inputs_model2)
-        # print(outputs_model2)
+  
 
-        # Train Model 1
         nn1 = WireModel()
         nn1.train(inputs_model1, outputs_model1, dataset_size, learning_rate=0.01)
 
-        # Train Model 2
         nn2 = WireModel2(regularization_strength=0.01)
-        outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] #one hot encoding which represents output labels for each color
+        outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] 
         nn2.train(inputs_model2, outputs_model2_one_hot, dataset_size, learning_rate=0.01)
 
         test_inputs_model1 = []
@@ -278,15 +268,11 @@ if __name__ == "__main__":
         test_inputs_model1 = np.array(test_inputs_model1)
         test_predictions_model1 = nn1.predict(test_inputs_model1)
         
-        # for i in range(test_size):
-        #     actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
-        #     predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
-        #     print(f"Grid {i + 1} (Model 1): Prediction - {predicted_label}, Actual - {actual_label}")
+   
 
         accuracy_model1 = nn1.calculate_accuracy(test_predictions_model1, test_outputs_model1)
         total_accuracy_model1 += accuracy_model1
 
-        # Generate test data for Model 2
         test_inputs_model2 = []
         test_outputs_model2 = []
 
@@ -301,10 +287,6 @@ if __name__ == "__main__":
                 test_outputs_model2.append(test_order[2])
                 
         testinputsarray = np.array(test_inputs_model2)
-            
-        # print(f'THESE ARE TEST INPUTS: {testinputsarray}')
-        # print(f'THESE ARE TEST OUTPUTS: {test_outputs_model2}')
-            
         test_inputs_model2 = np.array(test_inputs_model2)
         
         test_predictions_model2 = nn2.predict(test_inputs_model2)
@@ -315,14 +297,12 @@ if __name__ == "__main__":
         if print_statements:
             print(f"Experiment {exp_num + 1}:")
 
-            # Print statements for Model 1
             print("Model 1:")
             for i in range(test_size):
                 actual_label = 'Dangerous' if test_outputs_model1[i] == 1 else 'Not Dangerous'
                 predicted_label = 'Dangerous' if test_predictions_model1[i] == 1 else 'Not Dangerous'
                 print(f"  Grid {i + 1}: Prediction - {predicted_label}, Actual - {actual_label}")
 
-            # Print statements for Model 2
             print("Model 2:")
             for i in range(len(test_outputs_model2)):
                 actual_label = f"Cut Wire {test_outputs_model2[i]}"
@@ -330,10 +310,6 @@ if __name__ == "__main__":
                 print(f"  Grid {i + 1}: Prediction - {predicted_label}, Actual - {actual_label}")
 
         
-        # for i in range(len(test_outputs_model2)):
-        #     actual_label = f"Cut Wire {test_outputs_model2[i]}"
-        #     predicted_label = f"Predicted to Cut Wire {test_predictions_model2[i]}"
-        #     print(f"Grid {i + 1} (Model 2): Prediction - {predicted_label}, Actual - {actual_label}")
 
     average_accuracy_model1 = total_accuracy_model1 / num_experiments
     average_accuracy_model2 = total_accuracy_model2 / num_experiments
@@ -347,7 +323,7 @@ if __name__ == "__main__":
 
     # Train Model 2
     nn2 = WireModel2(regularization_strength=0.01)
-    outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1]  # one hot encoding
+    outputs_model2_one_hot = np.eye(4)[outputs_model2 - 1] 
     loss_model2 = nn2.train_with_loss(inputs_model2, outputs_model2_one_hot, dataset_size, learning_rate=0.01)
     losses_model2.append(loss_model2)
     
@@ -360,7 +336,6 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    # Plot the loss over time for Model 2
     for i, loss_values in enumerate(losses_model2):
         plt.plot(loss_values, label=f'Model 2 - Experiment {i + 1}')
 
